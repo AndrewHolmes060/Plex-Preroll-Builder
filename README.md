@@ -20,9 +20,10 @@ https://www.ffmpeg.org/download.html
 
 2. Install the python 3 packages
 ```python
-sudo pip3 install pytube
+sudo pip3 install pytube3
 sudo pip3 install ffmpeg-python
 sudo pip3 install plexapi
+sudo pip3 install cv2
 ```
 3. download the project
 
