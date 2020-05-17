@@ -26,7 +26,7 @@ https://www.ffmpeg.org/download.html
 
 ( server headless )
 ```python
-sudo pip3 install -yqq \
+sudo pip3 install \
           opencv-contrib-python-headless \
           pytube3 \
           ffmpeg-python \
