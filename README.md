@@ -16,15 +16,31 @@ Pytube3
 # Installation
 1. donwload and install ffmpeg
 
+``` ( ubuntu / debian based )
+sudo apt-get install ffmpeg -y
+``` 
+
 https://www.ffmpeg.org/download.html
 
-2. Install the python 3 packages
+2. Install the python 4 packages 
+
+( server headless )
 ```python
-sudo pip3 install pytube3
-sudo pip3 install ffmpeg-python
-sudo pip3 install plexapi
-sudo pip3 install cv2
+sudo pip3 install \
+          opencv-contrib-python-headless \
+          pytube3 \
+          ffmpeg-python \
+          plexapi
 ```
+( standard desktop environments ) 
+```python
+sudo pip3 install \
+          opencv-contrib-python \
+          pytube3 \
+          ffmpeg-python \
+          plexapi
+```
+
 3. download the project
 
 Download and put the folder where you want the prerolls to be generated.
