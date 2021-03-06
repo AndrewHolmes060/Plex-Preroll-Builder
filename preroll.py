@@ -1,27 +1,27 @@
 import sys
-import pytube
 import urllib.request
 import urllib.parse
 import re
 import os, os.path
-import shutil
-import math
-import datetime
-import matplotlib.pyplot as plt
-import cv2
 import ffmpeg
 import requests
 from pytube import YouTube
 from plexapi.server import PlexServer
 import textwrap
 import time
+from dotenv import load_dotenv
 
+
+# Get path to current directory
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+# Prepend the .env file with current directory
+load_dotenv(os.path.join(BASEDIR, '.env'))
 
 # Customise based on your server IP your servers Plex API Token and the folder you want this package to be sat in
-PLEX_URL = os.getenv("PLEX_URL")
-PLEX_TOKEN = os.getenv("PLEX_TOKEN")
+PLEX_URL = os.getenv("PLEX_URL", "")
+PLEX_TOKEN = os.getenv("PLEX_TOKEN", "")
 plex = PlexServer(PLEX_URL, PLEX_TOKEN)
-folder = "Input the directory that this is going to sit in"
+folder = os.getenv("FOLDER", "")
 
 
 # grabs the name of the currently refreshing movie metadata
@@ -139,7 +139,7 @@ def movie_add(name):
     # grabbing the movie information such as poster and description
     summary = movie.summary
     year = movie.year
-    poster_url = baseurl + movie.thumb + "?X-Plex-Token=" + token
+    poster_url = PLEX_URL + movie.thumb + "?X-Plex-Token=" + PLEX_TOKEN
     img_data = requests.get(poster_url).content
     with open("poster.jpg".format(name), "wb") as handler:
         handler.write(img_data)
