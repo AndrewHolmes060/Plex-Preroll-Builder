@@ -15,13 +15,13 @@ from dotenv import load_dotenv
 # Get path to current directory
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 # Prepend the .env file with current directory
-load_dotenv(os.path.join(BASEDIR, '.env'))
+load_dotenv(os.path.join(BASEDIR, ".env"))
 
 # Customise based on your server IP your servers Plex API Token and the folder you want this package to be sat in
-PLEX_URL = os.getenv("PLEX_URL", "")
-PLEX_TOKEN = os.getenv("PLEX_TOKEN", "")
+PLEX_URL = os.environ.get("PLEX_URL")
+PLEX_TOKEN = os.environ.get("PLEX_TOKEN")
 plex = PlexServer(PLEX_URL, PLEX_TOKEN)
-folder = os.getenv("FOLDER", "")
+folder = os.environ.get("FOLDER")
 
 
 # grabs the name of the currently refreshing movie metadata
