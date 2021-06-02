@@ -33,9 +33,10 @@ def show_progress_bar(stream, chunk, bytes_remaining):
 
 # grabbing the youtube soundtrack video and converting it into an mp3 of appropriate length and adding fade out
 def buildprerollsoundtrack(music_stream, music_filelocation):
+    print(music_filelocation)
     soundtrack = ffmpeg.input("{}".format(music_filelocation), ss=0, t=33.5)
     soundtrack = ffmpeg.filter(soundtrack, "afade", t="out", st=31.5, d=2)
-    soundtrack = ffmpeg.output(soundtrack, "prerollaudio.mp3")
+    soundtrack = ffmpeg.output(soundtrack, "{}prerollaudio.mp3".format(folder))
     ffmpeg.run(soundtrack)
     os.remove("{}".format(music_filelocation))
 
@@ -53,12 +54,13 @@ def buildpreroll(stream, filelocation):
     titlefont = "{}fonts/Bebas-Regular.ttf".format(folder)
     descriptionfont = "{}fonts/Roboto-Light.ttf".format(folder)
     rottenrating = ffmpeg.input(rottentomatoes)
-    rottenrating = ffmpeg.filter(poster, "scale", 1000, -1)
+    rottenrating = ffmpeg.filter(rottenrating, "scale", 60, -1)
     poster = ffmpeg.filter(poster, "scale", 200, -1)
     preroll = ffmpeg.input("{}".format(filelocation), ss=10, t=33.5)
     preroll = ffmpeg.filter(preroll, "scale", 1600, -1)
     prerollaudio = ffmpeg.input("{}prerollaudio.mp3".format(folder))
     preroll = ffmpeg.overlay(sidebar, preroll, x=300, y=125)
+    preroll = ffmpeg.overlay(preroll, rottenrating, x=135, y=250, enable="gte(t,1)")
     preroll = ffmpeg.overlay(preroll, poster, x=40, y=180, enable="gte(t,1)")
     preroll = ffmpeg.drawtext(
         preroll,
@@ -166,50 +168,58 @@ def listener():
                 
                 poster_url = PLEX_URL + movieThumb + "?X-Plex-Token=" + PLEX_TOKEN
                 img_data = requests.get(poster_url).content
-                with open("poster.jpg".format(name), "wb") as handler:
+                with open("poster.jpg", "wb") as handler:
                     handler.write(img_data)
-            
+
+                # looking up the top movie theatrical trailer with some extra stipulations to avoid playlist videos etc
                 search_query = ("{} Official Theatrical Trailer {}".format(name, year))
                 search_query = search_query.replace(" ", "+")
                 html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgIgAQ%253D%253D".format(search_query))
                 search_results = re.findall(r"watch\?v=(\S{11})", html.read().decode())
-                # looking up the top movie theatricle trailer with some extra stipulations to avoid playlist videos etc
-                url = "http://www.youtube.com/watch?v=" + search_results[0]
+
                 # looking up the top soundtrack youtube video
                 music_search_query = ("{} {} soundtrack".format(name, year))
                 music_search_query = music_search_query.replace(" ", "+")
                 music_html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgIgAQ%253D%253D".format(music_search_query))
                 music_search_results = re.findall(r"watch\?v=(\S{11})", music_html.read().decode())
-                # looking up the top movie theatricle trailer with some extra stipulations to avoid playlist videos etc
 
-                # downloading the soundtrack for the movie from the top available result found in the search
+                # downloading the soundtrack for the movie from the top available result found in the search and second one if the first is unavailable 
                 for i in music_search_results:
                     try:
-                        music_url = "http://www.youtube.com/watch?v={}".format(i)
-                        music_yt = YouTube(music_url)
-                        music_yt.register_on_progress_callback(show_progress_bar)
-                        music_yt.register_on_complete_callback(buildprerollsoundtrack)
+                        music_url = "http://www.youtube.com/watch?v=" + music_search_results[0]
                         print(music_url)
+                        music_yt = YouTube(music_url)
                         print("Downloading soundtrack video: {}".format(music_url))
-                        music_yt.streams
-                        music_yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download(output_path=("{}".format(folder)), filename="{}".format(name))
-
                     except:
-                        print("Video {} is unavaialable, skipping.".format(music_url))
-                        i=+1
+                        i=+ 1
+                        print("Video {} is unavaialable, skipping.")
+                        music_url = "http://www.youtube.com/watch?v=" + music_search_results[i]
                         continue
                     else:
+                        music_yt.register_on_progress_callback(show_progress_bar)
+                        music_yt.register_on_complete_callback(buildprerollsoundtrack)
+                        music_yt.streams.get_highest_resolution().download(
+                            output_path=("{}".format(folder)), filename="{}".format(name))
                         break
-                # downloading the movie theatricle trailer from the top result foind in the search
-                yt = YouTube(url)
-                yt.register_on_progress_callback(show_progress_bar)
-                yt.register_on_complete_callback(buildpreroll)
-                yt.streams.get_highest_resolution().download(
-                    output_path=("{}".format(folder)), filename="{}".format(name)
-                )
-
-
-
+ 
+                # downloading the top theatrical trailer for the movie from the top available result found in the search and second one if the first is unavailable 
+                for v in search_results:
+                    try:
+                        url = "http://www.youtube.com/watch?v=" + search_results[0]
+                        print(url)
+                        yt = YouTube(url)
+                        print("Downloading Theatrical Trailer: {}".format(url))
+                    except:
+                        v=+ 1
+                        url = "http://www.youtube.com/watch?v=" + search_results[v]
+                        print("Video {} is unavaialable, skipping.".format(url))
+                        continue
+                    else:
+                        yt.register_on_progress_callback(show_progress_bar)
+                        yt.register_on_complete_callback(buildpreroll)
+                        yt.streams.get_highest_resolution().download(
+                            output_path=("{}".format(folder)), filename="{}".format(name))
+                        break
     return response
 
 
