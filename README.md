@@ -19,13 +19,13 @@ flask
 
 
 # Installation
-1. set up your plex to speak to prerolls
+1. Set up your plex to speak to prerolls
 On the plex admin panel go to settings:
 ```
 general -> turn on push notifications
 webhooks -> Serverip/plexpreroll
 ```
-
+2. Install ffmpeg
 ``` ( ubuntu / debian based )
 sudo apt-get install ffmpeg -y
 ``` 
