@@ -159,7 +159,7 @@ def listener():
     
     event = webhook['event']
     print("Event: " + event)
-    if event == 'media.play':
+    if event == 'library.new':
             metadata = webhook['Metadata']
             isitamovie = metadata['type']
             if isitamovie == 'movie':
