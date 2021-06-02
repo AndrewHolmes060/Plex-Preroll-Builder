@@ -63,7 +63,7 @@ def buildpreroll(stream, filelocation):
     preroll = ffmpeg.filter(preroll, "scale", 1600, -1)
     prerollaudio = ffmpeg.input("{}prerollaudio.mp3".format(folder))
     preroll = ffmpeg.overlay(sidebar, preroll, x=300, y=125)
-    preroll = ffmpeg.overlay(preroll, poster, x=40, y=180, enable="gte(t,1)")
+    preroll = ffmpeg.overlay(preroll, poster, x=40, y=190, enable="gte(t,1)")
     if CriticRating == "":
         preroll = ffmpeg.drawtext(
             preroll,
@@ -82,7 +82,7 @@ def buildpreroll(stream, filelocation):
             text="Audiance Rating: {}%".format(AudienceRating),
             fontfile=titlefont,
             x=3,
-            y=155,
+            y=165,
             escape_text=True,
             fontcolor="0xFFFFFF@0xff",
             fontsize=32,
@@ -94,7 +94,7 @@ def buildpreroll(stream, filelocation):
             text="Critic Rating: {}%".format(CriticRating),
             fontfile=titlefont,
             x=3,
-            y=130,
+            y=135,
             escape_text=True,
             fontcolor="0xFFFFFF@0xff",
             fontsize=32,
