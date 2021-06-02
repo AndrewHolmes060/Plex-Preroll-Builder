@@ -19,7 +19,12 @@ flask
 
 
 # Installation
-1. donwload and install ffmpeg
+1. set up your plex to speak to prerolls
+On the plex admin panel go to settings:
+```
+general -> turn on push notifications
+webhooks -> Serverip/plexpreroll
+```
 
 ``` ( ubuntu / debian based )
 sudo apt-get install ffmpeg -y
@@ -27,13 +32,13 @@ sudo apt-get install ffmpeg -y
 
 https://www.ffmpeg.org/download.html
 
-2. Install the python 4 packages 
+3. Install the python 4 packages 
 
 ( server headless )
 ```python
 sudo pip3 install \
           opencv-contrib-python-headless \
-          pytube3 \
+          pgit+https://github.com/pytube/pytube
           ffmpeg-python \
           plexapi \
           python-dotenv \
@@ -43,7 +48,7 @@ sudo pip3 install \
 ```python
 sudo pip3 install \
           opencv-contrib-python \
-          pytube3 \
+          git+https://github.com/pytube/pytube
           ffmpeg-python \
           plexapi \
           python-dotenv \
@@ -51,22 +56,21 @@ sudo pip3 install \
 
 ```
 
-3. download the project
+4. download the project
 
 Download and put the folder where you want the prerolls to be generated.
 
-4. configure preroll.py to your plex server
+5. configure preroll.py to your plex server
 
 change the below fields to the details of your plex server
 
 ```python
 baseurl = 'Input Your Plex URL'
 token = 'Input Your Plex Token'
-plex = PlexServer(baseurl, token)
 folder = "Input the directory that this is going to sit in"
 ```
 
-5. run preroll.py
+6. run preroll.py
 ```
 python3 preroll.py
 ```

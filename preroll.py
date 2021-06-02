@@ -8,6 +8,7 @@ import requests
 import json
 import textwrap
 import time
+import pytube
 from pytube import YouTube
 from plexapi.server import PlexServer
 from dotenv import load_dotenv
@@ -33,7 +34,6 @@ def show_progress_bar(stream, chunk, bytes_remaining):
 
 # grabbing the youtube soundtrack video and converting it into an mp3 of appropriate length and adding fade out
 def buildprerollsoundtrack(music_stream, music_filelocation):
-    print(music_filelocation)
     soundtrack = ffmpeg.input("{}".format(music_filelocation), ss=0, t=33.5)
     soundtrack = ffmpeg.filter(soundtrack, "afade", t="out", st=31.5, d=2)
     soundtrack = ffmpeg.output(soundtrack, "{}prerollaudio.mp3".format(folder))
@@ -44,46 +44,62 @@ def buildprerollsoundtrack(music_stream, music_filelocation):
 def buildpreroll(stream, filelocation):
     titleoffset = ((len(name) * 33) / 2) - 7
     if titleoffset > 716:
-        title = textwrap.fill(name, width=40)
+        title = textwrap.fill(name, width=40, break_long_words=False)
         titlenl = title.find("\n")
         titleoffset = ((titlenl * 33) / 2) - 7
     description = textwrap.fill(summary, width=22, break_long_words=False)
+    num_of_lines = description.count("\n")
+    if num_of_lines > 22:
+        descriptionSize = 580 / num_of_lines
+    else:
+       descriptionSize = 26 
     sidebar = ffmpeg.input("{}overlays/prerolloverlaytest.mov".format(folder))
     poster = ffmpeg.input("{}poster.jpg".format(folder))
     fadeout = ffmpeg.input("{}overlays/fadeout.mov".format(folder))
     titlefont = "{}fonts/Bebas-Regular.ttf".format(folder)
     descriptionfont = "{}fonts/Roboto-Light.ttf".format(folder)
-    rottenrating = ffmpeg.input(rottentomatoes)
-    rottenrating = ffmpeg.filter(rottenrating, "scale", 60, -1)
     poster = ffmpeg.filter(poster, "scale", 200, -1)
     preroll = ffmpeg.input("{}".format(filelocation), ss=10, t=33.5)
     preroll = ffmpeg.filter(preroll, "scale", 1600, -1)
     prerollaudio = ffmpeg.input("{}prerollaudio.mp3".format(folder))
     preroll = ffmpeg.overlay(sidebar, preroll, x=300, y=125)
-    preroll = ffmpeg.overlay(preroll, rottenrating, x=135, y=250, enable="gte(t,1)")
     preroll = ffmpeg.overlay(preroll, poster, x=40, y=180, enable="gte(t,1)")
-    preroll = ffmpeg.drawtext(
-        preroll,
-        text="Audiance Rating: {}".format(imdbAudienceRating),
-        fontfile=titlefont,
-        x=3,
-        y=155,
-        escape_text=True,
-        fontcolor="0xFFFFFF@0xff",
-        fontsize=32,
-        enable="gte(t,1)",
-    )
-    preroll = ffmpeg.drawtext(
-        preroll,
-        text="Critic Rating: {}".format(imdbCriticRating),
-        fontfile=titlefont,
-        x=3,
-        y=130,
-        escape_text=True,
-        fontcolor="0xFFFFFF@0xff",
-        fontsize=32,
-        enable="gte(t,1)",
-    )
+    if CriticRating == "":
+        preroll = ffmpeg.drawtext(
+            preroll,
+            text="Audiance Rating: {}%".format(AudienceRating),
+            fontfile=titlefont,
+            x=3,
+            y=145,
+            escape_text=True,
+            fontcolor="0xFFFFFF@0xff",
+            fontsize=36,
+            enable="gte(t,1)",
+        )
+    else:
+        preroll = ffmpeg.drawtext(
+            preroll,
+            text="Audiance Rating: {}%".format(AudienceRating),
+            fontfile=titlefont,
+            x=3,
+            y=155,
+            escape_text=True,
+            fontcolor="0xFFFFFF@0xff",
+            fontsize=32,
+            enable="gte(t,1)",
+        )
+
+        preroll = ffmpeg.drawtext(
+            preroll,
+            text="Critic Rating: {}%".format(CriticRating),
+            fontfile=titlefont,
+            x=3,
+            y=130,
+            escape_text=True,
+            fontcolor="0xFFFFFF@0xff",
+            fontsize=32,
+            enable="gte(t,1)",
+        )
     preroll = ffmpeg.drawtext(
         preroll,
         text=name,
@@ -103,7 +119,7 @@ def buildpreroll(stream, filelocation):
         y=500,
         escape_text=True,
         fontcolor="0xFFFFFF@0xff",
-        fontsize=26,
+        fontsize=descriptionSize,
         enable="gte(t,1)",
     )
     preroll = ffmpeg.overlay(preroll, fadeout)
@@ -155,14 +171,15 @@ def listener():
                 year = metadata['year']
                 global movieThumb
                 movieThumb = metadata['thumb']
-                global imdbAudienceRating
-                imdbAudienceRating = metadata['audienceRating']
-                global imdbCriticRating
-                imdbCriticRating = metadata['rating']
-                global rottentomatoes
-                rottentomatoes = metadata['ratingImage']
-                print(name)
-
+                global AudienceRating
+                AudienceRating = int(metadata['audienceRating'] * 10)
+                global CriticRating
+                try:
+                    CriticRating = int(metadata['rating'] * 10)
+                except:
+                    CriticRating = ""
+                    print(name)
+                    
 
                 # grabbing the movie information such as poster and description
                 
@@ -174,53 +191,48 @@ def listener():
                 # looking up the top movie theatrical trailer with some extra stipulations to avoid playlist videos etc
                 search_query = ("{} Official Theatrical Trailer {}".format(name, year))
                 search_query = search_query.replace(" ", "+")
-                html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgIgAQ%253D%253D".format(search_query))
+                html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgQYASAB".format(search_query))
                 search_results = re.findall(r"watch\?v=(\S{11})", html.read().decode())
 
                 # looking up the top soundtrack youtube video
                 music_search_query = ("{} {} soundtrack".format(name, year))
                 music_search_query = music_search_query.replace(" ", "+")
-                music_html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgIgAQ%253D%253D".format(music_search_query))
+                music_html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgIYAQ%253D%253D".format(music_search_query))
                 music_search_results = re.findall(r"watch\?v=(\S{11})", music_html.read().decode())
-
                 # downloading the soundtrack for the movie from the top available result found in the search and second one if the first is unavailable 
                 for i in music_search_results:
                     try:
-                        music_url = "http://www.youtube.com/watch?v=" + music_search_results[0]
-                        print(music_url)
+                        music_url = "http://www.youtube.com/watch?v=" + i
                         music_yt = YouTube(music_url)
                         print("Downloading soundtrack video: {}".format(music_url))
-                    except:
-                        i=+ 1
-                        print("Video {} is unavaialable, skipping.")
-                        music_url = "http://www.youtube.com/watch?v=" + music_search_results[i]
-                        continue
-                    else:
                         music_yt.register_on_progress_callback(show_progress_bar)
                         music_yt.register_on_complete_callback(buildprerollsoundtrack)
+                    except pytube.exceptions.VideoUnavailable as e:
+                        print("Video is unavaialable due to {}, skipping.".format(e))
+                        continue
+                    else:
                         music_yt.streams.get_highest_resolution().download(
                             output_path=("{}".format(folder)), filename="{}".format(name))
                         break
- 
                 # downloading the top theatrical trailer for the movie from the top available result found in the search and second one if the first is unavailable 
                 for v in search_results:
                     try:
-                        url = "http://www.youtube.com/watch?v=" + search_results[0]
-                        print(url)
+                        url = "http://www.youtube.com/watch?v=" + v
                         yt = YouTube(url)
                         print("Downloading Theatrical Trailer: {}".format(url))
-                    except:
-                        v=+ 1
-                        url = "http://www.youtube.com/watch?v=" + search_results[v]
-                        print("Video {} is unavaialable, skipping.".format(url))
-                        continue
-                    else:
                         yt.register_on_progress_callback(show_progress_bar)
                         yt.register_on_complete_callback(buildpreroll)
+                    except pytube.exceptions.VideoUnavailable as e:
+                        print("Video is unavaialable due to {}, skipping.".format(e))
+                        continue
+                    else:
                         yt.streams.get_highest_resolution().download(
                             output_path=("{}".format(folder)), filename="{}".format(name))
                         break
     return response
+
+if __name__ == '__main__':
+    app.run()
 
 
 
