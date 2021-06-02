@@ -41,20 +41,19 @@ def buildprerollsoundtrack(music_stream, music_filelocation):
 
 # building the preroll video emptying the root folder of all downloaded contents and checking the preroll folder has the most recent 25 pre rolls
 def buildpreroll(stream, filelocation):
-    title = re.sub("{}".format(folder), "", filelocation)
-    title = re.sub(".mp4", "", title)
-    titleoffset = ((len(title) * 33) / 2) - 7
+    titleoffset = ((len(name) * 33) / 2) - 7
     if titleoffset > 716:
-        title = textwrap.fill(title, width=40)
+        title = textwrap.fill(name, width=40)
         titlenl = title.find("\n")
         titleoffset = ((titlenl * 33) / 2) - 7
-    description = "{}".format(summary)
-    description = textwrap.fill(description, width=22)
+    description = textwrap.fill(summary, width=22, break_long_words=False)
     sidebar = ffmpeg.input("{}overlays/prerolloverlaytest.mov".format(folder))
     poster = ffmpeg.input("{}poster.jpg".format(folder))
     fadeout = ffmpeg.input("{}overlays/fadeout.mov".format(folder))
     titlefont = "{}fonts/Bebas-Regular.ttf".format(folder)
-    descriptionfont = "{}fonts/cour.ttf".format(folder)
+    descriptionfont = "{}fonts/Roboto-Light.ttf".format(folder)
+    rottenrating = ffmpeg.input(rottentomatoes)
+    rottenrating = ffmpeg.filter(poster, "scale", 1000, -1)
     poster = ffmpeg.filter(poster, "scale", 200, -1)
     preroll = ffmpeg.input("{}".format(filelocation), ss=10, t=33.5)
     preroll = ffmpeg.filter(preroll, "scale", 1600, -1)
@@ -63,7 +62,29 @@ def buildpreroll(stream, filelocation):
     preroll = ffmpeg.overlay(preroll, poster, x=40, y=180, enable="gte(t,1)")
     preroll = ffmpeg.drawtext(
         preroll,
-        text=title,
+        text="Audiance Rating: {}".format(imdbAudienceRating),
+        fontfile=titlefont,
+        x=3,
+        y=155,
+        escape_text=True,
+        fontcolor="0xFFFFFF@0xff",
+        fontsize=32,
+        enable="gte(t,1)",
+    )
+    preroll = ffmpeg.drawtext(
+        preroll,
+        text="Critic Rating: {}".format(imdbCriticRating),
+        fontfile=titlefont,
+        x=3,
+        y=130,
+        escape_text=True,
+        fontcolor="0xFFFFFF@0xff",
+        fontsize=32,
+        enable="gte(t,1)",
+    )
+    preroll = ffmpeg.drawtext(
+        preroll,
+        text=name,
         fontfile=titlefont,
         x=(1106 - titleoffset),
         y=20,
@@ -80,12 +101,12 @@ def buildpreroll(stream, filelocation):
         y=500,
         escape_text=True,
         fontcolor="0xFFFFFF@0xff",
-        fontsize=22,
+        fontsize=26,
         enable="gte(t,1)",
     )
     preroll = ffmpeg.overlay(preroll, fadeout)
     preroll = ffmpeg.output(
-        prerollaudio, preroll, ("{}prerolls/{} Preroll.mp4".format(folder, title))
+        prerollaudio, preroll, ("{}prerolls/{} Preroll.mp4".format(folder, name))
     )
     ffmpeg.run(preroll)
     plexsetting = plex.settings.get("cinemaTrailersPrerollID")
@@ -99,12 +120,10 @@ def buildpreroll(stream, filelocation):
         os.remove(oldest_file)
         plexsetting = re.sub("{}{}".format(folder, oldest_file), "", plexsetting)
     settinginput = "{}; {}prerolls/{} Preroll.mp4".format(
-        plexsetting, folder, title
+        plexsetting, folder, name
     )
     plex.settings.get("cinemaTrailersPrerollID").set(settinginput)
     plex.settings.save()
-    print(settinginput)
-    print(plex.settings.cinemaTrailersPrerollID)
     os.remove("{}poster.jpg".format(folder))
     os.remove("{}prerollaudio.mp3".format(folder))
     os.remove("{}".format(filelocation))
@@ -116,27 +135,31 @@ def listener():
     response = Response(status=200)
     # need to set JSON like {'username': 'febin'}
     try:
-	    webhook = json.loads(data['payload'])
+        webhook = json.loads(data['payload'])
     except:
 	    print("No payload found")
     
     event = webhook['event']
-    #print(webhook)
     print("Event: " + event)
     if event == 'media.play':
-            # print(webhook)
             metadata = webhook['Metadata']
             isitamovie = metadata['type']
             if isitamovie == 'movie':
                 global name
                 name = metadata['title']
-                movie = name
+                global summary
                 summary = metadata['summary']
+                global year
                 year = metadata['year']
+                global movieThumb
                 movieThumb = metadata['thumb']
-                print(movieThumb)
+                global imdbAudienceRating
+                imdbAudienceRating = metadata['audienceRating']
+                global imdbCriticRating
+                imdbCriticRating = metadata['rating']
+                global rottentomatoes
+                rottentomatoes = metadata['ratingImage']
                 print(name)
-                print(summary)
 
 
                 # grabbing the movie information such as poster and description
@@ -146,33 +169,37 @@ def listener():
                 with open("poster.jpg".format(name), "wb") as handler:
                     handler.write(img_data)
             
-                search_query = ("{} Theatrical Trailer {}".format(name, year))
+                search_query = ("{} Official Theatrical Trailer {}".format(name, year))
                 search_query = search_query.replace(" ", "+")
                 html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgIgAQ%253D%253D".format(search_query))
                 search_results = re.findall(r"watch\?v=(\S{11})", html.read().decode())
                 # looking up the top movie theatricle trailer with some extra stipulations to avoid playlist videos etc
-                print(search_results)
                 url = "http://www.youtube.com/watch?v=" + search_results[0]
                 # looking up the top soundtrack youtube video
                 music_search_query = ("{} {} soundtrack".format(name, year))
                 music_search_query = music_search_query.replace(" ", "+")
-                print (music_search_query)
                 music_html = urllib.request.urlopen("https://www.youtube.com/results?search_query={}&sp=EgIgAQ%253D%253D".format(music_search_query))
-                print (music_html)
                 music_search_results = re.findall(r"watch\?v=(\S{11})", music_html.read().decode())
                 # looking up the top movie theatricle trailer with some extra stipulations to avoid playlist videos etc
-                print(music_search_results)
-                music_url = "http://www.youtube.com/watch?v=" + music_search_results[0]
 
-                print(url)
-                print(music_url)
-                # downloading the soundtrack for the movie from the top result found in the search
-                music_yt = YouTube(music_url)
-                music_yt.register_on_progress_callback(show_progress_bar)
-                music_yt.register_on_complete_callback(buildprerollsoundtrack)
-                music_yt.streams
-                music_yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download(output_path=("{}".format(folder)), filename="{}".format(name))
+                # downloading the soundtrack for the movie from the top available result found in the search
+                for i in music_search_results:
+                    try:
+                        music_url = "http://www.youtube.com/watch?v={}".format(i)
+                        music_yt = YouTube(music_url)
+                        music_yt.register_on_progress_callback(show_progress_bar)
+                        music_yt.register_on_complete_callback(buildprerollsoundtrack)
+                        print(music_url)
+                        print("Downloading soundtrack video: {}".format(music_url))
+                        music_yt.streams
+                        music_yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download(output_path=("{}".format(folder)), filename="{}".format(name))
 
+                    except:
+                        print("Video {} is unavaialable, skipping.".format(music_url))
+                        i=+1
+                        continue
+                    else:
+                        break
                 # downloading the movie theatricle trailer from the top result foind in the search
                 yt = YouTube(url)
                 yt.register_on_progress_callback(show_progress_bar)
@@ -182,8 +209,7 @@ def listener():
                 )
 
 
-    if event == 'library.new':
-        print(webhook) 
+
     return response
 
 

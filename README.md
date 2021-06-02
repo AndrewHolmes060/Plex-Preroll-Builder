@@ -12,6 +12,11 @@ PLEX-API
 
 Pytube3
 
+python-dotenv
+
+flask
+
+
 
 # Installation
 1. donwload and install ffmpeg
@@ -30,7 +35,9 @@ sudo pip3 install \
           opencv-contrib-python-headless \
           pytube3 \
           ffmpeg-python \
-          plexapi
+          plexapi \
+          python-dotenv \
+          flask \
 ```
 ( standard desktop environments ) 
 ```python
@@ -38,7 +45,10 @@ sudo pip3 install \
           opencv-contrib-python \
           pytube3 \
           ffmpeg-python \
-          plexapi
+          plexapi \
+          python-dotenv \
+          flask \
+
 ```
 
 3. download the project
