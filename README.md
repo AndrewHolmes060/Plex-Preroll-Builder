@@ -47,7 +47,7 @@ sudo pip3 install \
 ( standard desktop environments ) 
 ```python
 sudo pip3 install \
-          opencv-contrib-python \
+          opencv-python
           git+https://github.com/pytube/pytube
           ffmpeg-python \
           plexapi \
