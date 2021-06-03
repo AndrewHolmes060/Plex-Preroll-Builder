@@ -63,19 +63,33 @@ def buildpreroll(stream, filelocation):
     preroll = ffmpeg.filter(preroll, "scale", 1600, -1)
     prerollaudio = ffmpeg.input("{}prerollaudio.mp3".format(folder))
     preroll = ffmpeg.overlay(sidebar, preroll, x=300, y=125)
-    preroll = ffmpeg.overlay(preroll, poster, x=40, y=190, enable="gte(t,1)")
+    preroll = ffmpeg.overlay(preroll, poster, x=40, y=195, enable="gte(t,1)")
     if CriticRating == "":
         preroll = ffmpeg.drawtext(
             preroll,
             text="Audiance Rating: {}%".format(AudienceRating),
             fontfile=titlefont,
             x=3,
-            y=145,
+            y=150,
             escape_text=True,
             fontcolor="0xFFFFFF@0xff",
             fontsize=36,
             enable="gte(t,1)",
         )
+    elif AudienceRating == "":
+            preroll = ffmpeg.drawtext(
+            preroll,
+            text="Audiance Rating: {}%".format(CriticRating),
+            fontfile=titlefont,
+            x=3,
+            y=150,
+            escape_text=True,
+            fontcolor="0xFFFFFF@0xff",
+            fontsize=36,
+            enable="gte(t,1)",
+        )
+    elif CriticRating == "" and AudienceRating == "":
+        print ("we have no ratings available")
     else:
         preroll = ffmpeg.drawtext(
             preroll,
@@ -172,13 +186,16 @@ def listener():
                 global movieThumb
                 movieThumb = metadata['thumb']
                 global AudienceRating
-                AudienceRating = int(metadata['audienceRating'] * 10)
+                try:
+                    AudienceRating = int(metadata['audienceRating'] * 10)
+                except:
+                    AudienceRating = ""
                 global CriticRating
                 try:
                     CriticRating = int(metadata['rating'] * 10)
                 except:
                     CriticRating = ""
-                    print(name)
+                print(name)
                     
 
                 # grabbing the movie information such as poster and description
