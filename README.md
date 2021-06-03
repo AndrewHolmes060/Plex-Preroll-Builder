@@ -75,4 +75,4 @@ folder = "Input the directory that this is going to sit in"
 python3 preroll.py
 ```
 
-it will then begin listening to your server for new files to be added. if you want to manually create some prerolls refresh the metadata on a movie and it will create the trailer for you.
+it will then begin listening to your server for new files to be added.
