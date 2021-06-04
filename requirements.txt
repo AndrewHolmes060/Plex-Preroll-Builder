@@ -25,3 +25,4 @@ toml==0.10.2
 typed-ast==1.4.2
 typing-extensions==3.7.4.3
 urllib3==1.26.3
+flask

@@ -53,7 +53,7 @@ def buildpreroll(stream, filelocation):
         descriptionSize = 580 / num_of_lines
     else:
        descriptionSize = 26 
-    sidebar = ffmpeg.input("{}overlays/prerolloverlaytest.mov".format(folder))
+    sidebar = ffmpeg.input("{}overlays/prerolloverlay.mov".format(folder))
     poster = ffmpeg.input("{}poster.jpg".format(folder))
     fadeout = ffmpeg.input("{}overlays/fadeout.mov".format(folder))
     titlefont = "{}fonts/Bebas-Regular.ttf".format(folder)
@@ -161,11 +161,10 @@ def buildpreroll(stream, filelocation):
     os.remove("{}".format(filelocation))
     print("done!")
 
-@app.route('/plexpreoll', methods=['POST'])
+@app.route('/plexpreroll', methods=['POST'])
 def listener():
     data = request.form
     response = Response(status=200)
-    # need to set JSON like {'username': 'febin'}
     try:
         webhook = json.loads(data['payload'])
     except:
@@ -249,7 +248,7 @@ def listener():
     return response
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0", port=int("5000"), debug=True)
 
 
 

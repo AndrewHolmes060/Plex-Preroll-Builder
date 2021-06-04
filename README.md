@@ -43,7 +43,7 @@ https://www.ffmpeg.org/download.html
 ```python
 sudo pip3 install \
           opencv-contrib-python-headless \
-          pgit+https://github.com/pytube/pytube
+          git+https://github.com/pytube/pytube
           ffmpeg-python \
           plexapi \
           python-dotenv \
