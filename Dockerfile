@@ -1,12 +1,10 @@
 FROM python:3
 
-COPY preroll.py /
-COPY requirements.txt /
-COPY Overlays /
-COPY fonts /
-COPY prerolls /
-COPY .env /
+COPY . /
+RUN ls -la /
 
 RUN pip3 install -r requirements.txt
 EXPOSE 5000
-CMD [ "python3", "./preroll.py" ]
+CMD [ "python3", "./docker_preroll.py" ]
+RUN apt-get update
+RUN apt-get install ffmpeg -y
