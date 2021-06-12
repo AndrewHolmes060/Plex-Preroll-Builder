@@ -26,6 +26,8 @@ PLEX_URL = os.environ.get("PLEX_URL")
 PLEX_TOKEN = os.environ.get("PLEX_TOKEN")
 plex = PlexServer(PLEX_URL, PLEX_TOKEN)
 folder = os.environ.get("FOLDER")
+container_folder = os.getcwd()
+Preroll_length = 33.5
 
 # youtube downloading progress
 def show_progress_bar(stream, chunk, bytes_remaining):
@@ -34,9 +36,9 @@ def show_progress_bar(stream, chunk, bytes_remaining):
 
 # grabbing the youtube soundtrack video and converting it into an mp3 of appropriate length and adding fade out
 def buildprerollsoundtrack(music_stream, music_filelocation):
-    soundtrack = ffmpeg.input("{}".format(music_filelocation), ss=0, t=33.5)
-    soundtrack = ffmpeg.filter(soundtrack, "afade", t="out", st=31.5, d=2)
-    soundtrack = ffmpeg.output(soundtrack, "{}prerollaudio.mp3".format(folder))
+    soundtrack = ffmpeg.input("{}".format(music_filelocation), ss=0, t=Preroll_length)
+    soundtrack = ffmpeg.filter(soundtrack, "afade", t="out", st=(Preroll_length-2), d=2)
+    soundtrack = ffmpeg.output(soundtrack, "{}prerollaudio.mp3".format(container_folder))
     ffmpeg.run(soundtrack)
     os.remove("{}".format(music_filelocation))
 
@@ -53,15 +55,15 @@ def buildpreroll(stream, filelocation):
         descriptionSize = 580 / num_of_lines
     else:
        descriptionSize = 26 
-    sidebar = ffmpeg.input("{}overlays/prerolloverlay.mov".format(folder))
-    poster = ffmpeg.input("{}poster.jpg".format(folder))
-    fadeout = ffmpeg.input("{}overlays/fadeout.mov".format(folder))
-    titlefont = "{}fonts/Bebas-Regular.ttf".format(folder)
-    descriptionfont = "{}fonts/Roboto-Light.ttf".format(folder)
+    sidebar = ffmpeg.input("{}overlays/prerolloverlay.mov".format(container_folder))
+    poster = ffmpeg.input("{}poster.jpg".format(container_folder))
+    fadeout = ffmpeg.input("{}overlays/fadeout.mov".format(container_folder))
+    titlefont = "{}fonts/Bebas-Regular.ttf".format(container_folder)
+    descriptionfont = "{}fonts/Roboto-Light.ttf".format(container_folder)
     poster = ffmpeg.filter(poster, "scale", 200, -1)
-    preroll = ffmpeg.input("{}".format(filelocation), ss=10, t=33.5)
+    preroll = ffmpeg.input("{}".format(filelocation), ss=10, t=Preroll_length)
     preroll = ffmpeg.filter(preroll, "scale", 1600, -1)
-    prerollaudio = ffmpeg.input("{}prerollaudio.mp3".format(folder))
+    prerollaudio = ffmpeg.input("{}prerollaudio.mp3".format(container_folder))
     preroll = ffmpeg.overlay(sidebar, preroll, x=300, y=125)
     preroll = ffmpeg.overlay(preroll, poster, x=40, y=195, enable="gte(t,1)")
     if CriticRating == "":
@@ -138,26 +140,22 @@ def buildpreroll(stream, filelocation):
     )
     preroll = ffmpeg.overlay(preroll, fadeout)
     preroll = ffmpeg.output(
-        prerollaudio, preroll, ("{}prerolls/{} Preroll.mp4".format(folder, name))
+        prerollaudio, preroll, ("{}prerolls/{} Preroll.mp4".format(container_folder, name))
     )
     ffmpeg.run(preroll)
-    plexsetting = plex.settings.get("cinemaTrailersPrerollID")
-    plexsetting = str(plexsetting.value)
-    plexsprerolllength = len(plexsetting) - 1
-    plexsetting = plexsetting[2:plexsprerolllength]
-    dirListing = os.listdir("{}prerolls/".format(folder))
+    dirListing = os.listdir("{}prerolls/".format(container_folder))
     full_path = ["Prerolls/{0}".format(x) for x in dirListing]
     if len(dirListing) > 26:
         oldest_file = min(full_path, key=os.path.getctime)
         os.remove(oldest_file)
-        plexsetting = re.sub("{}{}".format(folder, oldest_file), "", plexsetting)
-    settinginput = "{}; {}prerolls/{} Preroll.mp4".format(
-        plexsetting, folder, name
-    )
-    plex.settings.get("cinemaTrailersPrerollID").set(settinginput)
+        plexsetting = re.sub("{}{}".format(container_folder, oldest_file), "", plexsetting)
+    preroll_list=(';{}prerolls/'.format(folder)).join(os.listdir("{}prerolls/".format(container_folder)))
+    preroll_list=(";{}{}".format(folder,preroll_list))
+    print(preroll_list)
+    plex.settings.get("cinemaTrailersPrerollID").set(preroll_list)
     plex.settings.save()
-    os.remove("{}poster.jpg".format(folder))
-    os.remove("{}prerollaudio.mp3".format(folder))
+    os.remove("{}poster.jpg".format(container_folder))
+    os.remove("{}prerollaudio.mp3".format(container_folder))
     os.remove("{}".format(filelocation))
     print("done!")
 
@@ -200,6 +198,7 @@ def listener():
                 # grabbing the movie information such as poster and description
                 
                 poster_url = PLEX_URL + movieThumb + "?X-Plex-Token=" + PLEX_TOKEN
+                print("the poster url is {}".format(poster_url))
                 img_data = requests.get(poster_url).content
                 with open("poster.jpg", "wb") as handler:
                     handler.write(img_data)
@@ -228,7 +227,7 @@ def listener():
                         continue
                     else:
                         music_yt.streams.get_highest_resolution().download(
-                            output_path=("{}".format(folder)), filename="{}".format(name))
+                            output_path=("{}".format(container_folder)), filename="{}".format(name))
                         break
                 # downloading the top theatrical trailer for the movie from the top available result found in the search and second one if the first is unavailable 
                 for v in search_results:
@@ -243,14 +242,9 @@ def listener():
                         continue
                     else:
                         yt.streams.get_highest_resolution().download(
-                            output_path=("{}".format(folder)), filename="{}".format(name))
+                            output_path=("{}".format(container_folder)), filename="{}".format(name))
                         break
     return response
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int("5000"), debug=True)
-
-
-
-
-
