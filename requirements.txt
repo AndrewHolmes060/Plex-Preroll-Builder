@@ -12,7 +12,7 @@ mypy-extensions==0.4.3
 numpy==1.20.1
 opencv-contrib-python-headless
 pathspec==0.8.1
-Pillow==8.1.1
+Pillow==8.3.2
 PlexAPI==4.4.0
 pyparsing==2.4.7
 python-dateutil==2.8.1
